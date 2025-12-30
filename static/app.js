@@ -366,20 +366,23 @@ function scrollToCurrentSegment() {
 // ==================== 问答区渲染 ====================
 function addQAMessage(type, content) {
     const message = document.createElement('div');
-    message.className = `qa-message qa-${type}`;
+    message.className = 'qa-item';
     
-    const avatar = document.createElement('div');
-    avatar.className = 'qa-avatar';
-    avatar.innerHTML = type === 'question' ? 
-        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>' :
-        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>';
+    const qaDiv = document.createElement('div');
+    qaDiv.className = type === 'question' ? 'qa-question' : 'qa-answer';
     
-    const bubble = document.createElement('div');
-    bubble.className = 'qa-bubble';
-    bubble.textContent = content;
+    // 添加标签
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size: 12px; font-weight: 600; margin-bottom: 6px; color: #6b7280;';
+    label.textContent = type === 'question' ? '💬 你的问题' : '🤖 AI 解答';
     
-    message.appendChild(avatar);
-    message.appendChild(bubble);
+    // 添加内容
+    const contentDiv = document.createElement('div');
+    contentDiv.textContent = content;
+    
+    qaDiv.appendChild(label);
+    qaDiv.appendChild(contentDiv);
+    message.appendChild(qaDiv);
     
     dom.qaContainer.appendChild(message);
     
@@ -391,14 +394,19 @@ function addQAMessage(type, content) {
 
 function addTransitionMessage(transition) {
     const message = document.createElement('div');
-    message.className = 'qa-transition';
-    message.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    message.className = 'qa-item';
+    message.style.cssText = 'text-align: center; padding: 8px; margin: 12px 0;';
+    
+    const transitionDiv = document.createElement('div');
+    transitionDiv.style.cssText = 'display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 20px; font-size: 13px;';
+    transitionDiv.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;">
             <polyline points="9 18 15 12 9 6"/>
         </svg>
         <span>${transition}</span>
     `;
     
+    message.appendChild(transitionDiv);
     dom.qaContainer.appendChild(message);
     
     setTimeout(() => {
