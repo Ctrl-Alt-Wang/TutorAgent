@@ -3,184 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智能教学助手</title>
+    <title>智能教材讲解系统</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="app-container">
-        <!-- 优雅的侧边栏 -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon">🎓</div>
-                    <h2>AI 教学助手</h2>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">📚</div>
+            <span>智能教材讲解系统</span>
+        </div>
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">等待上传</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="main-container">
+        <!-- 左侧 - 上传区域 -->
+        <section class="card upload-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">📄</div>
+                    教材内容
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">点击或拖拽上传教材图片</div>
+                    <div class="upload-hint">支持 JPG、PNG 格式</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                
+                <div class="preview-container hidden" id="previewContainer">
+                    <img src="" alt="预览" class="preview-image" id="previewImage">
+                    <div class="preview-actions">
+                        <button class="btn btn-secondary" onclick="resetUpload()">重新上传</button>
+                        <button class="btn btn-primary" id="startBtn" onclick="startAnalysis()">
+                            <span>🎯</span> 开始讲解
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 中间 - 讲解区域 -->
+        <section class="card lecture-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">🎓</div>
+                    AI 智能讲解
+                </div>
+                <div class="speed-control">
+                    <span class="speed-label">语速</span>
+                    <select class="speed-value" id="speedControl" onchange="changeSpeed()">
+                        <option value="0.8">0.8x</option>
+                        <option value="1" selected>1.0x</option>
+                        <option value="1.2">1.2x</option>
+                        <option value="1.5">1.5x</option>
+                    </select>
                 </div>
             </div>
             
-            <div class="sidebar-content">
-                <!-- 图片上传区域 -->
-                <div class="upload-section">
-                    <label class="section-label">
-                        <span class="label-icon">📸</span>
-                        上传教材图片
-                    </label>
-                    <div class="upload-area" id="uploadArea">
-                        <input type="file" id="imageInput" accept="image/*" hidden>
-                        <div class="upload-placeholder" id="uploadPlaceholder">
-                            <div class="upload-icon-wrapper">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                                </svg>
-                            </div>
-                            <p class="upload-text">点击或拖拽上传</p>
-                            <span class="upload-hint">支持 JPG、PNG 格式</span>
-                        </div>
-                        <div id="previewContainer" class="preview-container hidden">
-                            <img id="previewImage" class="preview-image" alt="预览">
-                            <button id="removeImageBtn" class="remove-image-btn" title="删除图片">×</button>
-                        </div>
+            <div class="lecture-content" id="lectureContent">
+                <div class="qa-empty">
+                    <div class="qa-empty-icon">🎯</div>
+                    <div>上传教材图片开始智能讲解</div>
+                    <div style="font-size: 13px; margin-top: 8px;">
+                        点击<span class="highlight" style="cursor: default;">高亮内容</span>可以暂停提问
                     </div>
                 </div>
-                
-                <!-- 文本输入区域 -->
-                <div class="text-section">
-                    <label class="section-label">
-                        <span class="label-icon">✍️</span>
-                        或直接输入内容
-                    </label>
-                    <textarea id="contentInput" placeholder="例如：解释勾股定理并举例说明..."></textarea>
-                </div>
-                
-                <!-- 快速示例 -->
-                <div class="examples-section">
-                    <label class="section-label">
-                        <span class="label-icon">⚡</span>
-                        快速体验
-                    </label>
-                    <div class="example-chips">
-                        <button class="chip" data-content="勾股定理：直角三角形两直角边的平方和等于斜边的平方，即 a² + b² = c²">勾股定理</button>
-                        <button class="chip" data-content="光合作用：植物利用光能将二氧化碳和水转化为有机物和氧气">光合作用</button>
-                        <button class="chip" data-content="牛顿第二定律：F=ma，物体的加速度与作用力成正比，与质量成反比">牛顿定律</button>
-                    </div>
-                </div>
-                
-                <!-- 开始按钮 -->
-                <button id="startBtn" class="btn-start">
-                    <span class="btn-icon">🚀</span>
-                    <span>开始智能讲解</span>
-                </button>
             </div>
-        </aside>
-        
-        <!-- 主教学区域 -->
-        <main class="main-content">
-            <!-- 欢迎界面 -->
-            <div id="welcomeSection" class="welcome-section">
-                <div class="welcome-container">
-                    <div class="welcome-hero">
-                        <h1 class="welcome-title">AI 智能教学助手</h1>
-                        <p class="welcome-subtitle">上传教材内容，AI 为你逐步讲解，随时打断提问</p>
-                    </div>
-                    
-                    <div class="feature-grid">
-                        <div class="feature-item">
-                            <div class="feature-icon">🎯</div>
-                            <h3>智能分析</h3>
-                            <p>自动识别图片内容<br/>结构化讲解</p>
-                        </div>
-                        <div class="feature-item">
-                            <div class="feature-icon">🗣️</div>
-                            <h3>语音讲解</h3>
-                            <p>逐段自动播放<br/>自然过渡衔接</p>
-                        </div>
-                        <div class="feature-item">
-                            <div class="feature-icon">💬</div>
-                            <h3>随时提问</h3>
-                            <p>点击内容暂停<br/>即时答疑解惑</p>
-                        </div>
-                        <div class="feature-item">
-                            <div class="feature-icon">🔄</div>
-                            <h3>智能衔接</h3>
-                            <p>问答完成后<br/>自动回归主线</p>
-                        </div>
-                    </div>
-                    
-                    <div class="welcome-arrow">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
-                        </svg>
-                        <p>从左侧上传内容开始体验</p>
-                    </div>
+
+            <div class="voice-control">
+                <div class="voice-progress">
+                    <div class="voice-progress-bar" id="progressBar"></div>
+                </div>
+                <div class="voice-buttons">
+                    <button class="voice-btn secondary" onclick="skipBackward()" title="上一段">⏮️</button>
+                    <button class="voice-btn main" id="playPauseBtn" onclick="togglePlayPause()" title="播放/暂停">▶️</button>
+                    <button class="voice-btn secondary" onclick="skipForward()" title="下一段">⏭️</button>
+                    <button class="voice-btn secondary" onclick="stopLecture()" title="停止">⏹️</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧 - 问答区域 -->
+        <section class="card qa-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">💬</div>
+                    互动问答
                 </div>
             </div>
             
-            <!-- 教学界面 -->
-            <div id="teachingSection" class="teaching-section hidden">
-                <!-- 顶部控制栏 -->
-                <div class="teaching-header">
-                    <div class="progress-info">
-                        <span id="progressText" class="progress-text">准备开始讲解...</span>
-                        <div class="progress-bar-container">
-                            <div id="progressBar" class="progress-bar"></div>
-                        </div>
-                    </div>
-                    <button id="resetBtn" class="btn-reset" title="重新开始">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
-                            <path d="M21 3v5h-5"/>
-                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
-                            <path d="M3 21v-5h5"/>
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- 讲解内容卡片 -->
-                <div class="teaching-content">
-                    <div id="contentCard" class="content-card">
-                        <!-- 讲解内容会动态插入这里 -->
-                    </div>
-                </div>
-                
-                <!-- 浮动问题按钮 -->
-                <button id="questionBtn" class="floating-question-btn" title="有疑问？点击提问">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                        <line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    <span>有疑问？</span>
-                </button>
-            </div>
-            
-            <!-- 问题输入对话框 -->
-            <div id="questionModal" class="modal hidden">
-                <div class="modal-overlay"></div>
-                <div class="modal-dialog">
-                    <div class="modal-header">
-                        <h3>💬 有什么疑问吗？</h3>
-                        <button id="closeModalBtn" class="modal-close">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="questionInput" placeholder="请输入你的问题或困惑..."></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button id="cancelQuestionBtn" class="btn-secondary">取消</button>
-                        <button id="submitQuestionBtn" class="btn-primary">提交问题</button>
-                    </div>
+            <div class="qa-list" id="qaList">
+                <div class="qa-empty">
+                    <div class="qa-empty-icon">💡</div>
+                    <div>有疑问？随时提问！</div>
+                    <div style="font-size: 13px; margin-top: 8px;">讲解将暂停等待您的问题</div>
                 </div>
             </div>
-            
-            <!-- 加载遮罩 -->
-            <div id="loadingOverlay" class="loading-overlay hidden">
-                <div class="loading-spinner"></div>
-                <p id="loadingText">正在分析内容...</p>
+
+            <div class="qa-input-area">
+                <div class="qa-input-wrapper">
+                    <input type="text" class="qa-input" id="qaInput" 
+                           placeholder="输入您的问题..." 
+                           onkeypress="handleInputKeypress(event)">
+                    <button class="qa-submit" id="qaSubmit" onclick="submitQuestion()">➤</button>
+                </div>
             </div>
-        </main>
+        </section>
+    </main>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">正在分析内容...</p>
     </div>
-    
+
     <script src="/static/app.js"></script>
 </body>
 </html>
