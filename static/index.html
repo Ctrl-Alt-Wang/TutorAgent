@@ -3,170 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 交互式语音教学</title>
+    <title>AI 智能教学助手</title>
     <link rel="stylesheet" href="/static/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="app-container">
-        <!-- 侧边栏 -->
+        <!-- 优雅的侧边栏 -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <h2>📚 教学内容</h2>
+                <div class="logo">
+                    <div class="logo-icon">🎓</div>
+                    <h2>AI 教学助手</h2>
+                </div>
             </div>
             
             <div class="sidebar-content">
-                <!-- 图片上传 -->
+                <!-- 图片上传区域 -->
                 <div class="upload-section">
-                    <h3>📷 上传教材图片</h3>
+                    <label class="section-label">
+                        <span class="label-icon">📸</span>
+                        上传教材图片
+                    </label>
                     <div class="upload-area" id="uploadArea">
                         <input type="file" id="imageInput" accept="image/*" hidden>
                         <div class="upload-placeholder" id="uploadPlaceholder">
-                            <span class="upload-icon">📤</span>
-                            <p>点击或拖拽上传图片</p>
-                            <small>支持 PNG、JPG、JPEG</small>
+                            <div class="upload-icon-wrapper">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                            </div>
+                            <p class="upload-text">点击或拖拽上传</p>
+                            <span class="upload-hint">支持 JPG、PNG 格式</span>
                         </div>
-                        <img id="previewImage" class="preview-image hidden" alt="预览">
+                        <div id="previewContainer" class="preview-container hidden">
+                            <img id="previewImage" class="preview-image" alt="预览">
+                            <button id="removeImageBtn" class="remove-image-btn" title="删除图片">×</button>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- 文本输入 -->
+                <!-- 文本输入区域 -->
                 <div class="text-section">
-                    <h3>📝 或输入文本</h3>
-                    <textarea id="contentInput" placeholder="输入知识点、题目或概念..."></textarea>
+                    <label class="section-label">
+                        <span class="label-icon">✍️</span>
+                        或直接输入内容
+                    </label>
+                    <textarea id="contentInput" placeholder="例如：解释勾股定理并举例说明..."></textarea>
                 </div>
                 
-                <!-- 操作按钮 -->
-                <div class="action-buttons">
-                    <button id="startBtn" class="btn btn-primary">
-                        <span>🚀</span> 开始语音教学
-                    </button>
-                    <button id="resetBtn" class="btn btn-secondary hidden">
-                        <span>🔄</span> 重新开始
-                    </button>
+                <!-- 快速示例 -->
+                <div class="examples-section">
+                    <label class="section-label">
+                        <span class="label-icon">⚡</span>
+                        快速体验
+                    </label>
+                    <div class="example-chips">
+                        <button class="chip" data-content="勾股定理：直角三角形两直角边的平方和等于斜边的平方，即 a² + b² = c²">勾股定理</button>
+                        <button class="chip" data-content="光合作用：植物利用光能将二氧化碳和水转化为有机物和氧气">光合作用</button>
+                        <button class="chip" data-content="牛顿第二定律：F=ma，物体的加速度与作用力成正比，与质量成反比">牛顿定律</button>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- 使用说明 -->
-            <div class="sidebar-footer">
-                <h3>💡 使用说明</h3>
-                <ol>
-                    <li>上传图片或输入文本</li>
-                    <li>点击"开始语音教学"</li>
-                    <li>使用控制按钮播放</li>
-                    <li>随时点击"我有问题"</li>
-                </ol>
+                
+                <!-- 开始按钮 -->
+                <button id="startBtn" class="btn-start">
+                    <span class="btn-icon">🚀</span>
+                    <span>开始智能讲解</span>
+                </button>
             </div>
         </aside>
         
-        <!-- 主内容区 -->
+        <!-- 主教学区域 -->
         <main class="main-content">
-            <!-- 顶部标题 -->
-            <header class="main-header">
-                <h1>🎤 AI 交互式语音教学</h1>
-                <p>上传教材内容，体验智能语音讲解，随时提问！</p>
-            </header>
-            
-            <!-- 欢迎页面 -->
-            <section id="welcomeSection" class="welcome-section">
-                <div class="feature-card">
-                    <h2>🎯 功能介绍</h2>
-                    <p>这是一个智能交互式语音教学系统：</p>
-                    <ul>
-                        <li>📷 <strong>图片识别</strong> - 上传教材截图，AI 自动分析</li>
-                        <li>🎙️ <strong>语音讲解</strong> - 分段讲解，逐步深入</li>
-                        <li>❓ <strong>随时提问</strong> - 暂停提问，即时解答</li>
-                        <li>🔗 <strong>无缝衔接</strong> - 解答后平滑继续</li>
-                    </ul>
-                </div>
-                
-                <div class="examples-card">
-                    <h3>📝 快速体验</h3>
-                    <p>点击下方示例立即开始：</p>
-                    <div class="example-buttons">
-                        <button class="btn btn-example" data-content="勾股定理：直角三角形两直角边的平方和等于斜边的平方，即 a² + b² = c²">
-                            🔢 勾股定理
-                        </button>
-                        <button class="btn btn-example" data-content="牛顿第二定律：F=ma，物体的加速度与作用力成正比，与质量成反比">
-                            ⚡ 牛顿定律
-                        </button>
-                        <button class="btn btn-example" data-content="Python列表推导式：[x**2 for x in range(10)]，可以快速生成列表">
-                            🐍 Python
-                        </button>
-                        <button class="btn btn-example" data-content="光合作用：植物利用光能将二氧化碳和水转化为有机物和氧气">
-                            🌱 光合作用
-                        </button>
-                    </div>
-                </div>
-            </section>
-            
-            <!-- 教学区域 -->
-            <section id="teachingSection" class="teaching-section hidden">
-                <!-- 进度条 -->
-                <div class="progress-container">
-                    <div class="progress-bar" id="progressBar"></div>
-                    <span class="progress-text" id="progressText">准备开始...</span>
-                </div>
-                
-                <!-- 讲解内容 -->
-                <div class="content-area" id="contentArea">
-                    <!-- 大纲视图 -->
-                    <div id="outlineView" class="outline-view">
-                        <h3>📑 讲解大纲</h3>
-                        <div id="outlineList" class="outline-list"></div>
+            <!-- 欢迎界面 -->
+            <div id="welcomeSection" class="welcome-section">
+                <div class="welcome-container">
+                    <div class="welcome-hero">
+                        <h1 class="welcome-title">AI 智能教学助手</h1>
+                        <p class="welcome-subtitle">上传教材内容，AI 为你逐步讲解，随时打断提问</p>
                     </div>
                     
-                    <!-- 当前分段内容 -->
-                    <div id="segmentView" class="segment-view hidden">
-                        <h2 id="segmentTitle" class="segment-title"></h2>
-                        <div id="segmentContent" class="segment-content"></div>
-                        <div id="keyPoints" class="key-points"></div>
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <div class="feature-icon">🎯</div>
+                            <h3>智能分析</h3>
+                            <p>自动识别图片内容<br/>结构化讲解</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🗣️</div>
+                            <h3>语音讲解</h3>
+                            <p>逐段自动播放<br/>自然过渡衔接</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">💬</div>
+                            <h3>随时提问</h3>
+                            <p>点击内容暂停<br/>即时答疑解惑</p>
+                        </div>
+                        <div class="feature-item">
+                            <div class="feature-icon">🔄</div>
+                            <h3>智能衔接</h3>
+                            <p>问答完成后<br/>自动回归主线</p>
+                        </div>
                     </div>
-                </div>
-                
-                <!-- 控制按钮 -->
-                <div class="control-buttons">
-                    <button id="prevBtn" class="btn btn-control" disabled>
-                        <span>⏮️</span> 上一段
-                    </button>
-                    <button id="playBtn" class="btn btn-control btn-play">
-                        <span id="playIcon">▶️</span> <span id="playText">开始讲解</span>
-                    </button>
-                    <button id="nextBtn" class="btn btn-control" disabled>
-                        <span>⏭️</span> 下一段
-                    </button>
-                    <button id="questionBtn" class="btn btn-control btn-question" disabled>
-                        <span>❓</span> 我有问题
-                    </button>
-                </div>
-            </section>
-            
-            <!-- 问题输入弹窗 -->
-            <div id="questionModal" class="modal hidden">
-                <div class="modal-content">
-                    <h3>❓ 提出你的问题</h3>
-                    <textarea id="questionInput" placeholder="请描述你的困惑..."></textarea>
-                    <div class="modal-buttons">
-                        <button id="submitQuestionBtn" class="btn btn-primary">📤 提交问题</button>
-                        <button id="cancelQuestionBtn" class="btn btn-secondary">❌ 取消</button>
+                    
+                    <div class="welcome-arrow">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+                        </svg>
+                        <p>从左侧上传内容开始体验</p>
                     </div>
                 </div>
             </div>
             
-            <!-- 问答结果弹窗 -->
-            <div id="answerModal" class="modal hidden">
-                <div class="modal-content modal-answer">
-                    <h3>💬 问答环节</h3>
-                    <div class="qa-question">
-                        <strong>❓ 你的问题:</strong>
-                        <p id="displayQuestion"></p>
+            <!-- 教学界面 -->
+            <div id="teachingSection" class="teaching-section hidden">
+                <!-- 顶部控制栏 -->
+                <div class="teaching-header">
+                    <div class="progress-info">
+                        <span id="progressText" class="progress-text">准备开始讲解...</span>
+                        <div class="progress-bar-container">
+                            <div id="progressBar" class="progress-bar"></div>
+                        </div>
                     </div>
-                    <div class="qa-answer">
-                        <strong>💡 老师解答:</strong>
-                        <div id="displayAnswer"></div>
+                    <button id="resetBtn" class="btn-reset" title="重新开始">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                            <path d="M21 3v5h-5"/>
+                            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                            <path d="M3 21v-5h5"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- 讲解内容卡片 -->
+                <div class="teaching-content">
+                    <div id="contentCard" class="content-card">
+                        <!-- 讲解内容会动态插入这里 -->
                     </div>
-                    <div id="transitionText" class="transition-text hidden"></div>
-                    <button id="continueBtn" class="btn btn-primary">✅ 明白了，继续讲解</button>
+                </div>
+                
+                <!-- 浮动问题按钮 -->
+                <button id="questionBtn" class="floating-question-btn" title="有疑问？点击提问">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span>有疑问？</span>
+                </button>
+            </div>
+            
+            <!-- 问题输入对话框 -->
+            <div id="questionModal" class="modal hidden">
+                <div class="modal-overlay"></div>
+                <div class="modal-dialog">
+                    <div class="modal-header">
+                        <h3>💬 有什么疑问吗？</h3>
+                        <button id="closeModalBtn" class="modal-close">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <textarea id="questionInput" placeholder="请输入你的问题或困惑..."></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="cancelQuestionBtn" class="btn-secondary">取消</button>
+                        <button id="submitQuestionBtn" class="btn-primary">提交问题</button>
+                    </div>
                 </div>
             </div>
             
@@ -181,4 +184,3 @@
     <script src="/static/app.js"></script>
 </body>
 </html>
-

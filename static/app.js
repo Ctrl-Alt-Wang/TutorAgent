@@ -1,67 +1,62 @@
 /**
- * AI 交互式语音教学系统 - 前端逻辑
+ * AI 智能教学助手 - 前端逻辑
+ * 功能：自动讲解、逐步呈现、打断提问、智能衔接
  */
 
-// ==================== 全局状态 ====================
+// ==================== 全局状态管理 ====================
 const state = {
     sessionId: generateUUID(),
-    segments: [],
-    currentSegmentIndex: -1,
-    isPlaying: false,
-    imageBase64: null,
-    currentUtterance: null
+    segments: [],              // 所有讲解分段
+    currentSegmentIndex: -1,   // 当前讲解到的分段
+    isTeaching: false,         // 是否正在教学
+    isPaused: false,           // 是否暂停
+    isInterrupted: false,      // 是否被打断（提问中）
+    imageBase64: null,         // 上传的图片
+    
+    // 语音相关
+    utterance: null,
+    
+    // 内容渲染
+    renderedSegments: [],      // 已渲染的分段
+    currentTyping: null,       // 当前打字效果的控制器
 };
 
 // ==================== DOM 元素 ====================
-const elements = {
+const dom = {
     // 侧边栏
     uploadArea: document.getElementById('uploadArea'),
     imageInput: document.getElementById('imageInput'),
     uploadPlaceholder: document.getElementById('uploadPlaceholder'),
+    previewContainer: document.getElementById('previewContainer'),
     previewImage: document.getElementById('previewImage'),
+    removeImageBtn: document.getElementById('removeImageBtn'),
     contentInput: document.getElementById('contentInput'),
     startBtn: document.getElementById('startBtn'),
-    resetBtn: document.getElementById('resetBtn'),
-
-    // 主内容区
+    
+    // 主区域
     welcomeSection: document.getElementById('welcomeSection'),
     teachingSection: document.getElementById('teachingSection'),
+    contentCard: document.getElementById('contentCard'),
     progressBar: document.getElementById('progressBar'),
     progressText: document.getElementById('progressText'),
-    outlineView: document.getElementById('outlineView'),
-    outlineList: document.getElementById('outlineList'),
-    segmentView: document.getElementById('segmentView'),
-    segmentTitle: document.getElementById('segmentTitle'),
-    segmentContent: document.getElementById('segmentContent'),
-    keyPoints: document.getElementById('keyPoints'),
-
-    // 控制按钮
-    prevBtn: document.getElementById('prevBtn'),
-    playBtn: document.getElementById('playBtn'),
-    playIcon: document.getElementById('playIcon'),
-    playText: document.getElementById('playText'),
-    nextBtn: document.getElementById('nextBtn'),
+    resetBtn: document.getElementById('resetBtn'),
     questionBtn: document.getElementById('questionBtn'),
-
-    // 弹窗
+    
+    // 对话框
     questionModal: document.getElementById('questionModal'),
     questionInput: document.getElementById('questionInput'),
     submitQuestionBtn: document.getElementById('submitQuestionBtn'),
     cancelQuestionBtn: document.getElementById('cancelQuestionBtn'),
-    answerModal: document.getElementById('answerModal'),
-    displayQuestion: document.getElementById('displayQuestion'),
-    displayAnswer: document.getElementById('displayAnswer'),
-    transitionText: document.getElementById('transitionText'),
-    continueBtn: document.getElementById('continueBtn'),
-
+    closeModalBtn: document.getElementById('closeModalBtn'),
+    
     // 加载
     loadingOverlay: document.getElementById('loadingOverlay'),
-    loadingText: document.getElementById('loadingText')
+    loadingText: document.getElementById('loadingText'),
 };
 
 // ==================== 工具函数 ====================
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
@@ -69,69 +64,76 @@ function generateUUID() {
 }
 
 function showLoading(text = '正在处理...') {
-    elements.loadingText.textContent = text;
-    elements.loadingOverlay.classList.remove('hidden');
+    dom.loadingText.textContent = text;
+    dom.loadingOverlay.classList.remove('hidden');
 }
 
 function hideLoading() {
-    elements.loadingOverlay.classList.add('hidden');
+    dom.loadingOverlay.classList.add('hidden');
 }
 
 function showError(message) {
-    alert('❌ 错误: ' + message);
+    alert('❌ ' + message);
 }
 
 // ==================== 语音合成 ====================
 const speech = {
     synth: window.speechSynthesis,
     voices: [],
-
+    
     init() {
-        // 加载语音列表
         this.loadVoices();
         if (this.synth.onvoiceschanged !== undefined) {
             this.synth.onvoiceschanged = () => this.loadVoices();
         }
     },
-
+    
     loadVoices() {
         this.voices = this.synth.getVoices();
     },
-
+    
     getChineseVoice() {
         return this.voices.find(v => v.lang.startsWith('zh')) || this.voices[0];
     },
-
+    
     speak(text, onEnd = null) {
-        this.stop();
-
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voice = this.getChineseVoice();
-        if (voice) utterance.voice = voice;
-
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-
-        if (onEnd) {
-            utterance.onend = onEnd;
-        }
-
-        state.currentUtterance = utterance;
-        this.synth.speak(utterance);
+        return new Promise((resolve) => {
+            this.stop();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voice = this.getChineseVoice();
+            if (voice) utterance.voice = voice;
+            
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+            
+            utterance.onend = () => {
+                if (onEnd) onEnd();
+                resolve();
+            };
+            
+            utterance.onerror = () => {
+                console.error('Speech synthesis error');
+                resolve();
+            };
+            
+            state.utterance = utterance;
+            this.synth.speak(utterance);
+        });
     },
-
+    
+    stop() {
+        this.synth.cancel();
+        state.utterance = null;
+    },
+    
     pause() {
         this.synth.pause();
     },
-
+    
     resume() {
         this.synth.resume();
-    },
-
-    stop() {
-        this.synth.cancel();
-        state.currentUtterance = null;
     }
 };
 
@@ -147,15 +149,15 @@ const api = {
                 image_base64: imageBase64
             })
         });
-
+        
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || '请求失败');
         }
-
+        
         return response.json();
     },
-
+    
     async askQuestion(question, segmentIndex) {
         const response = await fetch('/api/ask-question', {
             method: 'POST',
@@ -166,124 +168,266 @@ const api = {
                 current_segment_index: segmentIndex
             })
         });
-
+        
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.detail || '请求失败');
         }
-
+        
         return response.json();
     }
 };
 
-// ==================== UI 更新 ====================
-function updateUI() {
-    const { segments, currentSegmentIndex, isPlaying } = state;
-    const total = segments.length;
-
-    // 更新进度条
-    if (currentSegmentIndex >= 0) {
-        const progress = ((currentSegmentIndex + 1) / total) * 100;
-        elements.progressBar.style.width = `${progress}%`;
-        elements.progressText.textContent = `📖 讲解进度: ${currentSegmentIndex + 1} / ${total}`;
-    } else {
-        elements.progressBar.style.width = '0%';
-        elements.progressText.textContent = '📖 准备开始讲解...';
-    }
-
-    // 更新按钮状态
-    elements.prevBtn.disabled = currentSegmentIndex <= 0;
-    elements.nextBtn.disabled = currentSegmentIndex >= total - 1 || currentSegmentIndex < 0;
-    elements.questionBtn.disabled = currentSegmentIndex < 0;
-
-    // 更新播放按钮
-    if (currentSegmentIndex < 0) {
-        elements.playIcon.textContent = '▶️';
-        elements.playText.textContent = '开始讲解';
-    } else if (isPlaying) {
-        elements.playIcon.textContent = '⏸️';
-        elements.playText.textContent = '暂停';
-    } else {
-        elements.playIcon.textContent = '▶️';
-        elements.playText.textContent = '继续';
-    }
-
-    // 更新内容显示
-    if (currentSegmentIndex >= 0 && currentSegmentIndex < total) {
-        const segment = segments[currentSegmentIndex];
-        elements.outlineView.classList.add('hidden');
-        elements.segmentView.classList.remove('hidden');
-
-        elements.segmentTitle.textContent = `📌 ${segment.title || '讲解'}`;
-        elements.segmentContent.textContent = segment.content || '';
-
-        // 渲染关键点
-        elements.keyPoints.innerHTML = '';
-        if (segment.key_points && segment.key_points.length > 0) {
-            const title = document.createElement('h4');
-            title.textContent = '📋 本段要点:';
-            title.style.marginBottom = '10px';
-            title.style.width = '100%';
-            elements.keyPoints.appendChild(title);
-
-            segment.key_points.forEach((point, i) => {
-                const span = document.createElement('span');
-                span.className = 'key-point-item';
-                span.textContent = `${i + 1}. ${point}`;
-                elements.keyPoints.appendChild(span);
-            });
+// ==================== 内容渲染（带打字效果） ====================
+function typeWriter(element, text, speed = 30) {
+    return new Promise((resolve) => {
+        let index = 0;
+        element.textContent = '';
+        
+        const controller = {
+            stop: false
+        };
+        
+        state.currentTyping = controller;
+        
+        function type() {
+            if (controller.stop || index >= text.length) {
+                state.currentTyping = null;
+                resolve();
+                return;
+            }
+            
+            element.textContent += text.charAt(index);
+            index++;
+            setTimeout(type, speed);
         }
-    } else {
-        elements.outlineView.classList.remove('hidden');
-        elements.segmentView.classList.add('hidden');
-    }
-}
-
-function renderOutline() {
-    elements.outlineList.innerHTML = '';
-    state.segments.forEach((seg, i) => {
-        const item = document.createElement('div');
-        item.className = 'outline-item';
-        item.innerHTML = `<span class="item-number">第 ${i + 1} 段</span>${seg.title || '讲解'}`;
-        item.onclick = () => jumpToSegment(i);
-        elements.outlineList.appendChild(item);
+        
+        type();
     });
 }
 
-function jumpToSegment(index) {
-    state.currentSegmentIndex = index;
-    state.isPlaying = true;
-    updateUI();
-    speech.speak(state.segments[index].content);
+function stopTyping() {
+    if (state.currentTyping) {
+        state.currentTyping.stop = true;
+        state.currentTyping = null;
+    }
+}
+
+function renderSegment(segment, index) {
+    const segmentDiv = document.createElement('div');
+    segmentDiv.className = 'segment-item';
+    segmentDiv.dataset.index = index;
+    
+    // 段落头部
+    const header = document.createElement('div');
+    header.className = 'segment-header';
+    header.innerHTML = `
+        <div class="segment-number">${index + 1}</div>
+        <h3 class="segment-title">${segment.title || '讲解'}</h3>
+    `;
+    segmentDiv.appendChild(header);
+    
+    // 内容
+    const content = document.createElement('div');
+    content.className = 'segment-content';
+    segmentDiv.appendChild(content);
+    
+    // 关键点
+    if (segment.key_points && segment.key_points.length > 0) {
+        const keypoints = document.createElement('div');
+        keypoints.className = 'segment-keypoints';
+        segment.key_points.forEach(point => {
+            const tag = document.createElement('span');
+            tag.className = 'keypoint-tag';
+            tag.textContent = point;
+            keypoints.appendChild(tag);
+        });
+        segmentDiv.appendChild(keypoints);
+    }
+    
+    dom.contentCard.appendChild(segmentDiv);
+    
+    return { element: segmentDiv, contentElement: content };
+}
+
+function renderQAInterruption(question, answer, transition) {
+    const qaDiv = document.createElement('div');
+    qaDiv.className = 'qa-interruption';
+    
+    // 问题
+    const questionBlock = document.createElement('div');
+    questionBlock.className = 'qa-question-block';
+    questionBlock.innerHTML = `
+        <div class="qa-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            你的问题
+        </div>
+        <div class="qa-text">${question}</div>
+    `;
+    qaDiv.appendChild(questionBlock);
+    
+    // 答案
+    const answerBlock = document.createElement('div');
+    answerBlock.className = 'qa-answer-block';
+    answerBlock.innerHTML = `
+        <div class="qa-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            AI 解答
+        </div>
+        <div class="qa-text">${answer}</div>
+    `;
+    qaDiv.appendChild(answerBlock);
+    
+    // 过渡语
+    if (transition) {
+        const transitionDiv = document.createElement('div');
+        transitionDiv.className = 'transition-hint';
+        transitionDiv.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
+            ${transition}
+        `;
+        qaDiv.appendChild(transitionDiv);
+    }
+    
+    dom.contentCard.appendChild(qaDiv);
+    
+    // 滚动到底部
+    setTimeout(() => {
+        dom.contentCard.scrollTop = dom.contentCard.scrollHeight;
+    }, 100);
+}
+
+// ==================== 教学流程控制 ====================
+async function startTeachingFlow() {
+    state.isTeaching = true;
+    state.isPaused = false;
+    state.isInterrupted = false;
+    state.currentSegmentIndex = 0;
+    
+    // 启用问题按钮
+    dom.questionBtn.style.display = 'flex';
+    
+    for (let i = 0; i < state.segments.length; i++) {
+        if (!state.isTeaching) break;
+        
+        // 如果被打断，等待恢复
+        while (state.isInterrupted) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        if (!state.isTeaching) break;
+        
+        state.currentSegmentIndex = i;
+        updateProgress();
+        
+        const segment = state.segments[i];
+        
+        // 渲染分段
+        const { contentElement } = renderSegment(segment, i);
+        
+        // 滚动到最新内容
+        setTimeout(() => {
+            contentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        
+        // 打字效果显示内容
+        await typeWriter(contentElement, segment.content, 20);
+        
+        if (!state.isTeaching) break;
+        
+        // 语音播放
+        await speech.speak(segment.content);
+        
+        // 段落之间稍作停顿
+        if (i < state.segments.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+        }
+    }
+    
+    if (state.isTeaching) {
+        // 全部讲解完成
+        state.isTeaching = false;
+        dom.progressText.textContent = '✅ 讲解完成！';
+        dom.questionBtn.style.display = 'none';
+    }
+}
+
+function updateProgress() {
+    const progress = ((state.currentSegmentIndex + 1) / state.segments.length) * 100;
+    dom.progressBar.style.width = `${progress}%`;
+    dom.progressText.textContent = `📖 正在讲解第 ${state.currentSegmentIndex + 1} / ${state.segments.length} 段`;
+}
+
+// ==================== 问答打断流程 ====================
+async function handleQuestionInterruption(question) {
+    // 标记为打断状态
+    state.isInterrupted = true;
+    stopTyping();
+    speech.stop();
+    
+    showLoading('🤔 AI 正在思考你的问题...');
+    
+    try {
+        const result = await api.askQuestion(question, state.currentSegmentIndex);
+        
+        hideLoading();
+        
+        // 渲染问答内容
+        renderQAInterruption(question, result.answer, result.transition);
+        
+        // 语音播放答案
+        await speech.speak(result.answer);
+        
+        // 播放过渡语
+        if (result.transition) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await speech.speak(result.transition);
+        }
+        
+        // 恢复讲解
+        state.isInterrupted = false;
+        
+    } catch (error) {
+        hideLoading();
+        showError(error.message);
+        state.isInterrupted = false;
+    }
 }
 
 // ==================== 事件处理 ====================
+
 // 图片上传
-elements.uploadArea.onclick = () => elements.imageInput.click();
+dom.uploadArea.onclick = () => dom.imageInput.click();
 
-elements.uploadArea.ondragover = (e) => {
+dom.uploadArea.ondragover = (e) => {
     e.preventDefault();
-    elements.uploadArea.classList.add('dragover');
+    dom.uploadArea.style.borderColor = 'var(--primary-light)';
 };
 
-elements.uploadArea.ondragleave = () => {
-    elements.uploadArea.classList.remove('dragover');
+dom.uploadArea.ondragleave = () => {
+    dom.uploadArea.style.borderColor = '';
 };
 
-elements.uploadArea.ondrop = (e) => {
+dom.uploadArea.ondrop = (e) => {
     e.preventDefault();
-    elements.uploadArea.classList.remove('dragover');
+    dom.uploadArea.style.borderColor = '';
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
         handleImageFile(file);
     }
 };
 
-elements.imageInput.onchange = (e) => {
+dom.imageInput.onchange = (e) => {
     const file = e.target.files[0];
-    if (file) {
-        handleImageFile(file);
-    }
+    if (file) handleImageFile(file);
 };
 
 function handleImageFile(file) {
@@ -291,209 +435,129 @@ function handleImageFile(file) {
     reader.onload = (e) => {
         const base64 = e.target.result.split(',')[1];
         state.imageBase64 = base64;
-
-        elements.previewImage.src = e.target.result;
-        elements.previewImage.classList.remove('hidden');
-        elements.uploadPlaceholder.classList.add('hidden');
+        
+        dom.previewImage.src = e.target.result;
+        dom.uploadPlaceholder.classList.add('hidden');
+        dom.previewContainer.classList.remove('hidden');
     };
     reader.readAsDataURL(file);
 }
 
-// 开始教学
-elements.startBtn.onclick = async () => {
-    const text = elements.contentInput.value.trim();
-    const image = state.imageBase64;
+dom.removeImageBtn.onclick = (e) => {
+    e.stopPropagation();
+    state.imageBase64 = null;
+    dom.previewContainer.classList.add('hidden');
+    dom.uploadPlaceholder.classList.remove('hidden');
+    dom.imageInput.value = '';
+};
 
+// 快速示例
+document.querySelectorAll('.chip').forEach(chip => {
+    chip.onclick = () => {
+        dom.contentInput.value = chip.dataset.content;
+    };
+});
+
+// 开始教学
+dom.startBtn.onclick = async () => {
+    const text = dom.contentInput.value.trim();
+    const image = state.imageBase64;
+    
     if (!text && !image) {
         showError('请上传图片或输入内容');
         return;
     }
-
+    
     try {
-        showLoading('🔄 正在分析内容并生成讲解...');
+        showLoading('🔍 AI 正在分析内容...');
+        
         const result = await api.startTeaching(text, image);
-
-        state.segments = result.segments || [];
-        state.currentSegmentIndex = -1;
-        state.isPlaying = false;
-
-        if (state.segments.length > 0) {
-            elements.welcomeSection.classList.add('hidden');
-            elements.teachingSection.classList.remove('hidden');
-            elements.resetBtn.classList.remove('hidden');
-
-            renderOutline();
-            updateUI();
-        } else {
-            showError('未能生成讲解内容');
-        }
-    } catch (error) {
-        showError(error.message);
-    } finally {
+        
         hideLoading();
+        
+        state.segments = result.segments || [];
+        
+        if (state.segments.length === 0) {
+            showError('未能生成讲解内容');
+            return;
+        }
+        
+        // 切换到教学界面
+        dom.welcomeSection.classList.add('hidden');
+        dom.teachingSection.classList.remove('hidden');
+        dom.contentCard.innerHTML = '';
+        
+        // 开始自动教学流程
+        startTeachingFlow();
+        
+    } catch (error) {
+        hideLoading();
+        showError(error.message);
     }
 };
 
 // 重置
-elements.resetBtn.onclick = () => {
+dom.resetBtn.onclick = () => {
+    state.isTeaching = false;
+    state.isInterrupted = false;
+    stopTyping();
     speech.stop();
+    
     state.segments = [];
     state.currentSegmentIndex = -1;
-    state.isPlaying = false;
-    state.imageBase64 = null;
-
-    elements.welcomeSection.classList.remove('hidden');
-    elements.teachingSection.classList.add('hidden');
-    elements.resetBtn.classList.add('hidden');
-    elements.previewImage.classList.add('hidden');
-    elements.uploadPlaceholder.classList.remove('hidden');
-    elements.contentInput.value = '';
+    
+    dom.teachingSection.classList.add('hidden');
+    dom.welcomeSection.classList.remove('hidden');
+    dom.questionBtn.style.display = 'none';
 };
 
+// 提问按钮
+dom.questionBtn.onclick = () => {
+    dom.questionModal.classList.remove('hidden');
+    dom.questionInput.value = '';
+    dom.questionInput.focus();
+};
 
-// 播放控制
-elements.playBtn.onclick = () => {
-    if (state.currentSegmentIndex < 0) {
-        // 开始讲解
-        state.currentSegmentIndex = 0;
-        state.isPlaying = true;
-        updateUI();
-        speech.speak(state.segments[0].content);
-    } else if (state.isPlaying) {
-        // 暂停
-        speech.pause();
-        state.isPlaying = false;
-        updateUI();
-    } else {
-        // 继续
-        speech.resume();
-        state.isPlaying = true;
-        updateUI();
+// 关闭对话框
+dom.closeModalBtn.onclick = () => {
+    dom.questionModal.classList.add('hidden');
+};
+
+dom.cancelQuestionBtn.onclick = () => {
+    dom.questionModal.classList.add('hidden');
+};
+
+// 点击遮罩关闭
+dom.questionModal.onclick = (e) => {
+    if (e.target === dom.questionModal || e.target.className === 'modal-overlay') {
+        dom.questionModal.classList.add('hidden');
     }
 };
 
-// 上一段
-elements.prevBtn.onclick = () => {
-    if (state.currentSegmentIndex > 0) {
-        state.currentSegmentIndex--;
-        state.isPlaying = true;
-        updateUI();
-        speech.speak(state.segments[state.currentSegmentIndex].content);
-    }
-};
-
-// 下一段
-elements.nextBtn.onclick = () => {
-    if (state.currentSegmentIndex < state.segments.length - 1) {
-        state.currentSegmentIndex++;
-        state.isPlaying = true;
-        updateUI();
-        speech.speak(state.segments[state.currentSegmentIndex].content);
-    }
-};
-
-// 提问
-elements.questionBtn.onclick = () => {
-    speech.pause();
-    state.isPlaying = false;
-    updateUI();
-    elements.questionModal.classList.remove('hidden');
-    elements.questionInput.focus();
-};
-
-elements.cancelQuestionBtn.onclick = () => {
-    elements.questionModal.classList.add('hidden');
-    elements.questionInput.value = '';
-};
-
-elements.submitQuestionBtn.onclick = async () => {
-    const question = elements.questionInput.value.trim();
+// 提交问题
+dom.submitQuestionBtn.onclick = async () => {
+    const question = dom.questionInput.value.trim();
+    
     if (!question) {
         showError('请输入问题');
         return;
     }
+    
+    dom.questionModal.classList.add('hidden');
+    
+    await handleQuestionInterruption(question);
+};
 
-    try {
-        elements.questionModal.classList.add('hidden');
-        showLoading('🤔 正在思考你的问题...');
-
-        const result = await api.askQuestion(question, state.currentSegmentIndex);
-
-        elements.displayQuestion.textContent = question;
-        elements.displayAnswer.textContent = result.answer || '';
-
-        if (result.transition) {
-            elements.transitionText.textContent = `🔗 过渡: ${result.transition}`;
-            elements.transitionText.classList.remove('hidden');
-            state.pendingTransition = result.transition;
-        } else {
-            elements.transitionText.classList.add('hidden');
-            state.pendingTransition = null;
-        }
-
-        elements.answerModal.classList.remove('hidden');
-
-        // 朗读答案
-        speech.speak(result.answer);
-
-    } catch (error) {
-        showError(error.message);
-    } finally {
-        hideLoading();
-        elements.questionInput.value = '';
+// 回车提交
+dom.questionInput.onkeydown = (e) => {
+    if (e.key === 'Enter' && e.ctrlKey) {
+        dom.submitQuestionBtn.click();
     }
 };
-
-elements.continueBtn.onclick = () => {
-    elements.answerModal.classList.add('hidden');
-    state.isPlaying = true;
-    updateUI();
-
-    // 如果有过渡语，先朗读过渡语再朗读当前内容
-    const currentContent = state.segments[state.currentSegmentIndex]?.content || '';
-    const fullText = state.pendingTransition
-        ? `${state.pendingTransition} ${currentContent}`
-        : currentContent;
-
-    speech.speak(fullText);
-    state.pendingTransition = null;
-};
-
-// 示例按钮
-document.querySelectorAll('.btn-example').forEach(btn => {
-    btn.onclick = async () => {
-        const content = btn.dataset.content;
-        elements.contentInput.value = content;
-
-        try {
-            showLoading('🔄 正在分析内容并生成讲解...');
-            const result = await api.startTeaching(content, null);
-
-            state.segments = result.segments || [];
-            state.currentSegmentIndex = -1;
-            state.isPlaying = false;
-
-            if (state.segments.length > 0) {
-                elements.welcomeSection.classList.add('hidden');
-                elements.teachingSection.classList.remove('hidden');
-                elements.resetBtn.classList.remove('hidden');
-
-                renderOutline();
-                updateUI();
-            } else {
-                showError('未能生成讲解内容');
-            }
-        } catch (error) {
-            showError(error.message);
-        } finally {
-            hideLoading();
-        }
-    };
-});
 
 // ==================== 初始化 ====================
 document.addEventListener('DOMContentLoaded', () => {
     speech.init();
-    console.log('🎤 AI 交互式语音教学系统已加载');
+    dom.questionBtn.style.display = 'none';
+    console.log('🎓 AI 智能教学助手已加载');
 });
-
