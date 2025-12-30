@@ -8,6 +8,11 @@ class TutorialDatabase:
     
     def __init__(self, db_path: str = "database/tutorial_agent.db"):
         self.db_path = db_path
+        # 确保数据库目录存在
+        import os
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
         self.init_database()
     
     def init_database(self):
