@@ -36,7 +36,8 @@ const dom = {
     // 中间讲解区
     welcomeScreen: document.getElementById('welcomeScreen'),
     lectureScreen: document.getElementById('lectureScreen'),
-    lectureContent: document.getElementById('lectureContent'),
+    lectureContent: document.getElementById('contentCard'),  // 讲解内容容器
+    contentCard: document.getElementById('contentCard'),      // 别名，保持兼容
     progressBar: document.getElementById('progressBar'),
     progressText: document.getElementById('progressText'),
     statusIndicator: document.getElementById('statusIndicator'),
