@@ -411,6 +411,12 @@ async function startTeaching() {
     state.isTeaching = true;
     state.currentSegmentIndex = 0;
     
+    // 清空问答区的欢迎提示
+    const qaEmpty = dom.qaContainer.querySelector('.qa-empty');
+    if (qaEmpty) {
+        qaEmpty.remove();
+    }
+    
     updateStatusIndicator('speaking');
     renderAllSegments();
     scrollToCurrentSegment();
