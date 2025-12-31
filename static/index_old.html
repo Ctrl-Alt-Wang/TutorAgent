@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能教材讲解系统</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- 头部 -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">📚</div>
+            <span>智能教材讲解系统</span>
+        </div>
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">等待上传</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="main-container">
+        <!-- 左侧 - 上传区域 -->
+        <section class="card upload-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">📄</div>
+                    教材内容
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📷</div>
+                    <div class="upload-text">点击或拖拽上传教材图片</div>
+                    <div class="upload-hint">支持 JPG、PNG 格式</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                
+                <div class="preview-container hidden" id="previewContainer">
+                    <img src="" alt="预览" class="preview-image" id="previewImage">
+                    <div class="preview-actions">
+                        <button class="btn btn-secondary" onclick="resetUpload()">重新上传</button>
+                        <button class="btn btn-primary" id="startBtn" onclick="startAnalysis()">
+                            <span>🎯</span> 开始讲解
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 中间 - 讲解区域 -->
+        <section class="card lecture-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">🎓</div>
+                    AI 智能讲解
+                </div>
+                <div class="speed-control">
+                    <span class="speed-label">语速</span>
+                    <select class="speed-value" id="speedControl" onchange="changeSpeed()">
+                        <option value="0.8">0.8x</option>
+                        <option value="1" selected>1.0x</option>
+                        <option value="1.2">1.2x</option>
+                        <option value="1.5">1.5x</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="lecture-content" id="lectureContent">
+                <div class="qa-empty">
+                    <div class="qa-empty-icon">🎯</div>
+                    <div>上传教材图片开始智能讲解</div>
+                    <div style="font-size: 13px; margin-top: 8px;">
+                        点击<span class="highlight" style="cursor: default;">高亮内容</span>可以暂停提问
+                    </div>
+                </div>
+            </div>
+
+            <div class="voice-control">
+                <div class="voice-progress">
+                    <div class="voice-progress-bar" id="progressBar"></div>
+                </div>
+                <div class="voice-buttons">
+                    <button class="voice-btn secondary" onclick="skipBackward()" title="上一段">⏮️</button>
+                    <button class="voice-btn main" id="playPauseBtn" onclick="togglePlayPause()" title="播放/暂停">▶️</button>
+                    <button class="voice-btn secondary" onclick="skipForward()" title="下一段">⏭️</button>
+                    <button class="voice-btn secondary" onclick="stopLecture()" title="停止">⏹️</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 右侧 - 问答区域 -->
+        <section class="card qa-section">
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-title-icon">💬</div>
+                    互动问答
+                </div>
+            </div>
+            
+            <div class="qa-list" id="qaList">
+                <div class="qa-empty">
+                    <div class="qa-empty-icon">💡</div>
+                    <div>有疑问？随时提问！</div>
+                    <div style="font-size: 13px; margin-top: 8px;">讲解将暂停等待您的问题</div>
+                </div>
+            </div>
+
+            <div class="qa-input-area">
+                <div class="qa-input-wrapper">
+                    <input type="text" class="qa-input" id="qaInput" 
+                           placeholder="输入您的问题..." 
+                           onkeypress="handleInputKeypress(event)">
+                    <button class="qa-submit" id="qaSubmit" onclick="submitQuestion()">➤</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 加载遮罩 -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p id="loadingText">正在分析内容...</p>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

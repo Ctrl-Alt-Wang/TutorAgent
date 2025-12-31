@@ -531,7 +531,8 @@ Be supportive and educational. Rate their understanding and provide specific fee
             **state,
             "transition_text": transition_text,
             "pending_question": None,
-            "qa_answer": None,
+            # 保留qa_answer，前端需要显示
+            # "qa_answer": None,  
             "is_voice_paused": False,
             "current_mode": "voice_resume"
         }
